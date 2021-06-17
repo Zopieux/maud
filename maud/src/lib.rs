@@ -241,20 +241,38 @@ mod rocket_support {
     extern crate std;
 
     use crate::PreEscaped;
+    use crate::Render;
     use alloc::string::String;
-    use rocket::{
-        http::{ContentType, Status},
-        request::Request,
-        response::{Responder, Response},
-    };
+    use rocket::http::ContentType;
+    use rocket::request::Request;
+    use rocket::response::{self, Responder, Response};
     use std::io::Cursor;
 
-    impl Responder<'static> for PreEscaped<String> {
-        fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
+    impl<'r, 'o: 'r> Responder<'r, 'o> for PreEscaped<String> {
+        fn respond_to(self, _: &'r Request<'_>) -> response::Result<'o> {
             Response::build()
                 .header(ContentType::HTML)
-                .sized_body(Cursor::new(self.0))
+                .sized_body(self.0.len(), Cursor::new(self.0))
                 .ok()
+        }
+    }
+
+    impl_render_with_display! {
+        rocket::http::uri::Origin<'_>
+    }
+}
+
+#[cfg(feature = "chrono")]
+mod chrono_support {
+    use alloc::string::String;
+    use chrono::format::Item;
+    use chrono::format::DelayedFormat;
+    use alloc::borrow::Borrow;
+
+    impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> crate::Render for DelayedFormat<I> {
+        fn render_to(&self, w: &mut String) {
+            // TODO: remove the explicit arg when Rust 1.58 is released
+            format_args!("{self}", self = self).render_to(w);
         }
     }
 }

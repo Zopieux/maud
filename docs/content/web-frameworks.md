@@ -67,10 +67,9 @@ so you can return the result directly:
 
 use maud::{html, Markup};
 use rocket::{get, routes};
-use std::borrow::Cow;
 
 #[get("/<name>")]
-fn hello<'a>(name: Cow<'a, str>) -> Markup {
+fn hello<'a>(name: &str) -> Markup {
     html! {
         h1 { "Hello, " (name) "!" }
         p { "Nice to meet you!" }
